@@ -3,8 +3,8 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Express } from "express";
 import session from "express-session";
 import pgSession from "connect-pg-simple";
-import { getPool, storage } from "./storage";
-import { User } from "../shared/schema";
+import { getPool, storage } from "./storage.js";
+import { User } from "./schema.js";
 
 export function setupAuth(app: Express) {
     const PostgresqlStore = pgSession(session);

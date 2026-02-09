@@ -4,7 +4,8 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const students = pgTable("students", {
-    id: varchar("id").primaryKey(),
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: integer("user_id").notNull().references(() => users.id),
     name: text("name").notNull(),
     grade: text("grade").notNull(),
     parentName: text("parent_name").notNull(),
@@ -16,7 +17,8 @@ export const students = pgTable("students", {
 });
 
 export const classSessions = pgTable("class_sessions", {
-    id: varchar("id").primaryKey(),
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: integer("user_id").notNull().references(() => users.id),
     date: timestamp("date").notNull().defaultNow(),
     durationMinutes: integer("duration_minutes").notNull(),
     summary: text("summary").notNull().default(""),

@@ -1,8 +1,8 @@
 import express from "express";
 import { createServer } from "http";
-import { registerRoutes } from "./routes";
-import { serveStatic } from "./static";
-import { getPool } from "./storage";
+import { registerRoutes } from "./routes.js";
+import { serveStatic } from "./static.js";
+import { getPool } from "./storage.js";
 
 export async function createApp() {
     const app = express();

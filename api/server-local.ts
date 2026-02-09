@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { createApp } from "./app";
+import { createApp } from "./app.js";
 
 function log(message: string, source = "express") {
     const formattedTime = new Date().toLocaleTimeString("en-US", {

@@ -1,11 +1,11 @@
 import type { Express } from "express";
 import passport from "passport";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { insertStudentSchema, insertClassSessionSchema } from "../shared/schema";
+import { storage } from "./storage.js";
+import { insertStudentSchema, insertClassSessionSchema } from "./schema.js";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
-import { setupAuth } from "./auth";
+import { setupAuth } from "./auth.js";
 
 export async function registerRoutes(
     httpServer: Server,
@@ -49,21 +49,21 @@ export async function registerRoutes(
 
     // --- Students ---
 
-    app.get("/api/students", async (_req, res) => {
-        const students = await storage.getStudents();
+    app.get("/api/students", async (req: any, res) => {
+        const students = await storage.getStudents(req.user.id);
         res.json(students);
     });
 
-    app.get("/api/students/:id", async (req, res) => {
-        const student = await storage.getStudent(req.params.id);
+    app.get("/api/students/:id", async (req: any, res) => {
+        const student = await storage.getStudent(req.params.id, req.user.id);
         if (!student) return res.status(404).json({ message: "Student not found" });
         res.json(student);
     });
 
-    app.post("/api/students", async (req, res) => {
+    app.post("/api/students", async (req: any, res) => {
         try {
             const data = insertStudentSchema.parse(req.body);
-            const student = await storage.createStudent(data);
+            const student = await storage.createStudent({ ...data, userId: req.user.id });
             res.status(201).json(student);
         } catch (e) {
             if (e instanceof ZodError) {
@@ -73,40 +73,40 @@ export async function registerRoutes(
         }
     });
 
-    app.patch("/api/students/:id", async (req, res) => {
-        const student = await storage.updateStudent(req.params.id, req.body);
+    app.patch("/api/students/:id", async (req: any, res) => {
+        const student = await storage.updateStudent(req.params.id, req.user.id, req.body);
         if (!student) return res.status(404).json({ message: "Student not found" });
         res.json(student);
     });
 
-    app.delete("/api/students/:id", async (req, res) => {
-        const success = await storage.deleteStudent(req.params.id);
+    app.delete("/api/students/:id", async (req: any, res) => {
+        const success = await storage.deleteStudent(req.params.id, req.user.id);
         if (!success) return res.status(404).json({ message: "Student not found" });
         res.status(204).send();
     });
 
     // --- Class Sessions ---
 
-    app.get("/api/classes", async (_req, res) => {
-        const sessions = await storage.getClassSessions();
+    app.get("/api/classes", async (req: any, res) => {
+        const sessions = await storage.getClassSessions(req.user.id);
         res.json(sessions);
     });
 
-    app.get("/api/classes/:id", async (req, res) => {
-        const session = await storage.getClassSession(req.params.id);
+    app.get("/api/classes/:id", async (req: any, res) => {
+        const session = await storage.getClassSession(req.params.id, req.user.id);
         if (!session) return res.status(404).json({ message: "Class session not found" });
         res.json(session);
     });
 
-    app.get("/api/classes/student/:studentId", async (req, res) => {
-        const sessions = await storage.getClassSessionsByStudent(req.params.studentId);
+    app.get("/api/classes/student/:studentId", async (req: any, res) => {
+        const sessions = await storage.getClassSessionsByStudent(req.params.studentId, req.user.id);
         res.json(sessions);
     });
 
-    app.post("/api/classes", async (req, res) => {
+    app.post("/api/classes", async (req: any, res) => {
         try {
             const data = insertClassSessionSchema.parse(req.body);
-            const session = await storage.createClassSession(data);
+            const session = await storage.createClassSession({ ...data, userId: req.user.id });
             res.status(201).json(session);
         } catch (e) {
             if (e instanceof ZodError) {
@@ -116,7 +116,7 @@ export async function registerRoutes(
         }
     });
 
-    app.patch("/api/classes/:id", async (req, res) => {
+    app.patch("/api/classes/:id", async (req: any, res) => {
         try {
             const updateData = { ...req.body };
             // Convert date string to Date object if present
@@ -126,7 +126,7 @@ export async function registerRoutes(
                 console.log("Converted date:", updateData.date, "Type:", typeof updateData.date);
             }
             console.log("Update data:", JSON.stringify(updateData, null, 2));
-            const session = await storage.updateClassSession(req.params.id, updateData);
+            const session = await storage.updateClassSession(req.params.id, req.user.id, updateData);
             if (!session) return res.status(404).json({ message: "Class session not found" });
             res.json(session);
         } catch (error: any) {
@@ -137,9 +137,9 @@ export async function registerRoutes(
 
     // --- Dashboard stats ---
 
-    app.get("/api/stats", async (_req, res) => {
-        const students = await storage.getStudents();
-        const classes = await storage.getClassSessions();
+    app.get("/api/stats", async (req: any, res) => {
+        const students = await storage.getStudents(req.user.id);
+        const classes = await storage.getClassSessions(req.user.id);
 
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);

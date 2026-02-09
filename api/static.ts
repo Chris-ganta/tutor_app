@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export function serveStatic(app: Express) {
-    const distPath = path.resolve(__dirname, "public");
+    const distPath = path.resolve(__dirname, "..", "dist", "public");
 
     if (!express.static(distPath)) {
         throw new Error(`Could not find static directory: ${distPath}`);
