@@ -45,6 +45,8 @@ export default function ClassSession() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/classes"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/classes/student"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/students"] });
             queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
             toast({
                 title: "Class Logged!",
@@ -99,12 +101,33 @@ export default function ClassSession() {
         setShowPreview(true);
     };
 
+    const notifyMutation = useMutation({
+        mutationFn: async () => {
+            await apiRequest("POST", "/api/notify/class-summary", {
+                studentIds: selectedStudents,
+                date: new Date().toLocaleDateString(),
+                durationMinutes: duration[0],
+                summary,
+            });
+        },
+        onSuccess: () => {
+            setShowPreview(false);
+            toast({
+                title: "📧 Notification Sent!",
+                description: `Class summary emailed to ${selectedStudents.length} parent(s).`,
+            });
+        },
+        onError: (error: Error) => {
+            toast({
+                title: "Failed to send",
+                description: error.message,
+                variant: "destructive",
+            });
+        },
+    });
+
     const handleSendNotification = () => {
-        setShowPreview(false);
-        toast({
-            title: "Notification Sent!",
-            description: `Summary sent to ${selectedStudents.length} parent(s).`,
-        });
+        notifyMutation.mutate();
     };
 
     const studentNames = selectedStudents.map(id => students.find((s: any) => s.id === id)?.name).join(", ");

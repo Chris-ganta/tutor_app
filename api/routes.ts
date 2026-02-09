@@ -169,6 +169,105 @@ export async function registerRoutes(
         });
     });
 
+    // --- Email Notifications ---
+
+    app.post("/api/notify/class-summary", async (req: any, res) => {
+        try {
+            const { studentIds, date, durationMinutes, summary } = req.body;
+            if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+                return res.status(400).json({ message: "studentIds required" });
+            }
+            const allStudents = await storage.getStudents(req.user.id);
+            const targetStudents = allStudents.filter(s => studentIds.includes(s.id));
+            if (targetStudents.length === 0) {
+                return res.status(404).json({ message: "No matching students found" });
+            }
+            const { sendClassSummary } = await import("./email.js");
+            const results = await Promise.all(
+                targetStudents.map(student =>
+                    sendClassSummary(
+                        student.parentEmail,
+                        student.parentName,
+                        student.name,
+                        req.user.name,
+                        date || new Date().toLocaleDateString(),
+                        durationMinutes || 60,
+                        summary || ""
+                    )
+                )
+            );
+            const failed = results.filter(r => !r.success);
+            if (failed.length > 0) {
+                return res.status(207).json({
+                    message: `${results.length - failed.length}/${results.length} emails sent`,
+                    errors: failed.map(f => f.error),
+                });
+            }
+            res.json({ message: `${results.length} email(s) sent successfully` });
+        } catch (error: any) {
+            console.error("Error sending class summary:", error);
+            res.status(500).json({ message: error.message || "Failed to send notifications" });
+        }
+    });
+
+    app.post("/api/notify/payment-reminder", async (req: any, res) => {
+        try {
+            const { studentId } = req.body;
+            if (!studentId) return res.status(400).json({ message: "studentId required" });
+            const student = await storage.getStudent(studentId, req.user.id);
+            if (!student) return res.status(404).json({ message: "Student not found" });
+            const classes = await storage.getClassSessionsByStudent(studentId, req.user.id);
+            const unpaidSessions = classes.filter(c => !c.isPaid);
+            let amountDue = 0;
+            for (const c of unpaidSessions) {
+                amountDue += (student.hourlyRate * c.durationMinutes) / 60;
+            }
+            const { sendPaymentReminder } = await import("./email.js");
+            const result = await sendPaymentReminder(
+                student.parentEmail,
+                student.parentName,
+                student.name,
+                req.user.name,
+                Math.round(amountDue),
+                unpaidSessions.length
+            );
+            if (!result.success) {
+                return res.status(500).json({ message: result.error });
+            }
+            res.json({ message: "Payment reminder sent", amountDue: Math.round(amountDue), unpaidSessions: unpaidSessions.length });
+        } catch (error: any) {
+            console.error("Error sending payment reminder:", error);
+            res.status(500).json({ message: error.message || "Failed to send reminder" });
+        }
+    });
+
+    app.post("/api/notify/custom", async (req: any, res) => {
+        try {
+            const { studentId, subject, message } = req.body;
+            if (!studentId || !subject || !message) {
+                return res.status(400).json({ message: "studentId, subject, and message required" });
+            }
+            const student = await storage.getStudent(studentId, req.user.id);
+            if (!student) return res.status(404).json({ message: "Student not found" });
+            const { sendCustomNotification } = await import("./email.js");
+            const result = await sendCustomNotification(
+                student.parentEmail,
+                student.parentName,
+                student.name,
+                req.user.name,
+                subject,
+                message
+            );
+            if (!result.success) {
+                return res.status(500).json({ message: result.error });
+            }
+            res.json({ message: "Custom notification sent" });
+        } catch (error: any) {
+            console.error("Error sending custom notification:", error);
+            res.status(500).json({ message: error.message || "Failed to send notification" });
+        }
+    });
+
     // Force JSON content-type for API routes to clarify response type
     app.use("/api", (_req, res, next) => {
         res.setHeader("Content-Type", "application/json");

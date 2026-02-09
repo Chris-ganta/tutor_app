@@ -78,7 +78,7 @@ export class DatabaseStorage implements IStorage {
         return student;
     }
 
-    async updateStudent(id: string, userId: number, updateData: Partial<InsertStudent>): Promise<Student | undefined> {
+    async updateStudent(id: string, userId: number, updateData: Partial<Student>): Promise<Student | undefined> {
         const db = getDb();
         const [student] = await db
             .update(students)
@@ -120,9 +120,43 @@ export class DatabaseStorage implements IStorage {
         return sessions.filter(s => s.studentIds.includes(studentId));
     }
 
+    async recalculateStudentBalance(studentId: string, userId: number): Promise<void> {
+        const db = getDb();
+        const student = await this.getStudent(studentId, userId);
+        if (!student) return;
+
+        const sessions = await this.getClassSessionsByStudent(studentId, userId);
+        const unpaidSessions = sessions.filter(s => !s.isPaid);
+
+        let newBalance = 0;
+        let newTotalPaid = 0; // If we tracked payments separately, but for now let's just focus on balance = outstanding
+
+        // Calculate outstanding balance
+        for (const session of unpaidSessions) {
+            newBalance += (student.hourlyRate * session.durationMinutes) / 60;
+        }
+
+        // Calculate total paid (sum of paid sessions)
+        const paidSessions = sessions.filter(s => s.isPaid);
+        for (const session of paidSessions) {
+            newTotalPaid += (student.hourlyRate * session.durationMinutes) / 60;
+        }
+
+        await this.updateStudent(studentId, userId, {
+            balance: Math.round(newBalance),
+            totalPaid: Math.round(newTotalPaid)
+        });
+    }
+
     async createClassSession(insertSession: InsertClassSession & { userId: number }): Promise<ClassSession> {
         const db = getDb();
         const [session] = await db.insert(classSessions).values(insertSession).returning();
+
+        // Recalculate balance for all students in this session
+        for (const studentId of session.studentIds) {
+            await this.recalculateStudentBalance(studentId, insertSession.userId);
+        }
+
         return session;
     }
 
@@ -131,6 +165,14 @@ export class DatabaseStorage implements IStorage {
         const [session] = await db.update(classSessions).set(data).where(
             and(eq(classSessions.id, id), eq(classSessions.userId, userId))
         ).returning();
+
+        if (session) {
+            // Recalculate balance for all students in this session
+            for (const studentId of session.studentIds) {
+                await this.recalculateStudentBalance(studentId, userId);
+            }
+        }
+
         return session;
     }
 

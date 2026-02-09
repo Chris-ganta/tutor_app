@@ -1,9 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Phone, Mail, Clock, DollarSign, Calendar, Loader2 } from "lucide-react";
+import { ArrowLeft, Phone, Mail, Clock, Calendar, Loader2, Send, BellRing } from "lucide-react";
 import { format } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 const getInitials = (name: string) => name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
@@ -20,6 +27,10 @@ function getAvatarColor(name: string) {
 
 export default function StudentDetails() {
     const [match, params] = useRoute("/students/:id");
+    const { toast } = useToast();
+    const [emailOpen, setEmailOpen] = useState(false);
+    const [emailSubject, setEmailSubject] = useState("");
+    const [emailMessage, setEmailMessage] = useState("");
 
     const { data: student, isLoading: studentLoading } = useQuery<any>({
         queryKey: ["/api/students", params?.id],
@@ -30,6 +41,65 @@ export default function StudentDetails() {
         queryKey: ["/api/classes/student", params?.id],
         enabled: !!params?.id,
     });
+
+    const emailMutation = useMutation({
+        mutationFn: async () => {
+            await apiRequest("POST", "/api/notify/custom", {
+                studentId: student.id,
+                subject: emailSubject,
+                message: emailMessage,
+            });
+        },
+        onSuccess: () => {
+            setEmailOpen(false);
+            setEmailSubject("");
+            setEmailMessage("");
+            toast({
+                title: "Email Sent",
+                description: "Your message has been sent to the parent.",
+            });
+        },
+        onError: (error: Error) => {
+            toast({
+                title: "Failed to send email",
+                description: error.message,
+                variant: "destructive",
+            });
+        },
+    });
+
+    const paymentReminderMutation = useMutation({
+        mutationFn: async () => {
+            await apiRequest("POST", "/api/notify/payment-reminder", {
+                studentId: student.id,
+            });
+        },
+        onSuccess: (data: any) => {
+            toast({
+                title: "Reminder Sent",
+                description: `Payment reminder for $${data.amountDue} sent to parent.`,
+            });
+        },
+        onError: (error: Error) => {
+            toast({
+                title: "Failed to send reminder",
+                description: error.message,
+                variant: "destructive",
+            });
+        },
+    });
+
+    const handleSendEmail = () => {
+        if (!emailSubject || !emailMessage) {
+            toast({
+                title: "Missing fields",
+                description: "Please fill in both subject and message.",
+                variant: "destructive",
+            });
+            return;
+        }
+        emailMutation.mutate();
+    };
 
     const isLoading = studentLoading || classesLoading;
 
@@ -81,18 +151,22 @@ export default function StudentDetails() {
                         {getInitials(student.name)}
                     </div>
                     <h1 className="text-2xl font-bold font-display" data-testid="text-student-name">{student.name}</h1>
-                    <p className="text-muted-foreground" data-testid="text-student-age">Age: {student.grade}</p>
+                    <p className="text-muted-foreground" data-testid="text-student-age">Grade: {student.grade}</p>
 
                     <div className="flex gap-3 mt-4 w-full justify-center">
                         <Button size="sm" variant="outline" className="rounded-full gap-2" asChild data-testid="button-call-parent">
                             <a href={`tel:${student.parentPhone}`}>
-                                <Phone className="h-4 w-4" /> Call Parent
+                                <Phone className="h-4 w-4" /> Call
                             </a>
                         </Button>
-                        <Button size="sm" variant="outline" className="rounded-full gap-2" asChild data-testid="button-email-parent">
-                            <a href={`mailto:${student.parentEmail}`}>
-                                <Mail className="h-4 w-4" /> Email
-                            </a>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-full gap-2"
+                            onClick={() => setEmailOpen(true)}
+                            data-testid="button-email-parent"
+                        >
+                            <Mail className="h-4 w-4" /> Email
                         </Button>
                     </div>
                 </div>
@@ -101,11 +175,27 @@ export default function StudentDetails() {
             <div className="p-6 space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                     <Card className="border-none shadow-sm bg-primary/5" data-testid="card-balance">
-                        <CardContent className="p-4">
+                        <CardContent className="p-4 relative">
                             <p className="text-xs text-muted-foreground mb-1">Current Balance</p>
                             <p className={`text-xl font-bold ${student.balance > 0 ? "text-red-600" : "text-green-600"}`} data-testid="text-balance">
                                 ${student.balance}
                             </p>
+                            {student.balance > 0 && (
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="absolute top-2 right-2 h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-100"
+                                    onClick={() => paymentReminderMutation.mutate()}
+                                    disabled={paymentReminderMutation.isPending}
+                                    title="Send Payment Reminder"
+                                >
+                                    {paymentReminderMutation.isPending ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <BellRing className="h-4 w-4" />
+                                    )}
+                                </Button>
+                            )}
                         </CardContent>
                     </Card>
                     <Card className="border-none shadow-sm" data-testid="card-hourly-rate">
@@ -129,8 +219,8 @@ export default function StudentDetails() {
                                 <span className="font-medium" data-testid="text-parent-phone">{student.parentPhone}</span>
                             </div>
                             <div className="flex justify-between items-center">
-                                <span className="text-sm text-muted-foreground">Total Paid</span>
-                                <span className="font-medium text-green-600" data-testid="text-total-paid">${student.totalPaid}</span>
+                                <span className="text-sm text-muted-foreground">Email</span>
+                                <span className="font-medium truncate max-w-[200px]" data-testid="text-parent-email">{student.parentEmail}</span>
                             </div>
                         </CardContent>
                     </Card>
@@ -165,6 +255,43 @@ export default function StudentDetails() {
                     </div>
                 </div>
             </div>
+
+            <Dialog open={emailOpen} onOpenChange={setEmailOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Email Parent</DialogTitle>
+                        <DialogDescription>
+                            Send a message to {student.parentName} ({student.parentEmail})
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label>Subject</Label>
+                            <Input
+                                placeholder="e.g., Progress Update"
+                                value={emailSubject}
+                                onChange={(e) => setEmailSubject(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Message</Label>
+                            <Textarea
+                                placeholder="Type your message here..."
+                                className="min-h-[150px]"
+                                value={emailMessage}
+                                onChange={(e) => setEmailMessage(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEmailOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSendEmail} disabled={emailMutation.isPending}>
+                            {emailMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+                            Send Email
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
