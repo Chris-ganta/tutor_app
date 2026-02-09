@@ -41,8 +41,8 @@ export const session = pgTable("session", {
     expire: timestamp("expire").notNull(),
 });
 
-export const insertStudentSchema = createInsertSchema(students).omit({ id: true, balance: true, totalPaid: true });
-export const insertClassSessionSchema = createInsertSchema(classSessions).omit({ id: true, date: true });
+export const insertStudentSchema = createInsertSchema(students).omit({ id: true, userId: true, balance: true, totalPaid: true });
+export const insertClassSessionSchema = createInsertSchema(classSessions).omit({ id: true, userId: true, date: true });
 export const insertUserSchema = createInsertSchema(users);
 
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
