@@ -56,7 +56,7 @@ export interface IStorage {
     createUser(user: InsertUser): Promise<User>;
 }
 
-import { and } from "drizzle-orm";
+import { and, desc } from "drizzle-orm";
 
 export class DatabaseStorage implements IStorage {
     async getStudents(userId: number): Promise<Student[]> {
@@ -101,7 +101,7 @@ export class DatabaseStorage implements IStorage {
         const db = getDb();
         return await db.select().from(classSessions)
             .where(eq(classSessions.userId, userId))
-            .orderBy(classSessions.date);
+            .orderBy(desc(classSessions.date));
     }
 
     async getClassSession(id: string, userId: number): Promise<ClassSession | undefined> {
@@ -116,7 +116,7 @@ export class DatabaseStorage implements IStorage {
         const db = getDb();
         const sessions = await db.select().from(classSessions).where(
             and(eq(classSessions.userId, userId))
-        ).orderBy(classSessions.date);
+        ).orderBy(desc(classSessions.date));
         return sessions.filter(s => s.studentIds.includes(studentId));
     }
 
