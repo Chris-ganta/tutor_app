@@ -71,6 +71,14 @@ export default function ClassSession() {
         }
     };
 
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedStudents(students.map((s: any) => s.id));
+        } else {
+            setSelectedStudents([]);
+        }
+    };
+
     const handleLogClass = () => {
         if (selectedStudents.length === 0) {
             toast({
@@ -143,7 +151,7 @@ export default function ClassSession() {
 
     return (
         <div className="min-h-screen bg-background pb-24 flex flex-col">
-            <div className="p-6 border-b flex items-center gap-4">
+            <div className="p-6 border-b flex items-center gap-4 bg-background sticky top-0 z-10">
                 <Button variant="ghost" size="icon" onClick={() => setLocation("/")} data-testid="button-back">
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
@@ -152,45 +160,59 @@ export default function ClassSession() {
 
             <div className="flex-1 p-6 space-y-8">
                 <section>
-                    <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Mark Attendance</h2>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">MARK ATTENDANCE</h2>
+                        <span className="text-xs text-primary font-medium">{selectedStudents.length}/{students.length} selected</span>
+                    </div>
+
+                    <div className="bg-muted/30 rounded-xl overflow-hidden border border-border/50">
+                        {students.length > 1 && (
+                            <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-muted/20">
+                                <Checkbox
+                                    id="select-all"
+                                    checked={selectedStudents.length === students.length && students.length > 0}
+                                    onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                                />
+                                <Label htmlFor="select-all" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer select-none">
+                                    Select All
+                                </Label>
+                            </div>
+                        )}
+
                         {students.map((student: any) => {
                             const isSelected = selectedStudents.includes(student.id);
                             return (
                                 <div
                                     key={student.id}
                                     onClick={() => handleToggleStudent(student.id)}
-                                    data-testid={`card-student-${student.id}`}
                                     className={`
-                    relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
-                    ${isSelected
-                                            ? "border-primary bg-primary/5 shadow-md"
-                                            : "border-transparent bg-muted/50 hover:bg-muted"
-                                        }
-                  `}
+                                        flex items-center gap-3 px-4 py-2.5 border-b border-border/30 cursor-pointer transition-colors
+                                        ${isSelected ? "bg-primary/5" : "hover:bg-muted/50"}
+                                    `}
+                                    data-testid={`row-student-${student.id}`}
                                 >
-                                    <div className="flex flex-col items-center gap-2">
-                                        <div className={`h-12 w-12 rounded-full flex items-center justify-center text-white font-semibold text-sm ${getAvatarColor(student.name)}`}>
-                                            {getInitials(student.name)}
-                                        </div>
-                                        <span className="font-semibold text-sm text-center leading-tight">{student.name}</span>
-
-                                        {isSelected && (
-                                            <div className="absolute top-2 right-2 text-primary">
-                                                <CheckCircle2 className="h-5 w-5 fill-primary text-white" />
-                                            </div>
-                                        )}
+                                    <Checkbox
+                                        checked={isSelected}
+                                        onCheckedChange={() => handleToggleStudent(student.id)}
+                                        className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                    />
+                                    <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 ${getAvatarColor(student.name)}`}>
+                                        {getInitials(student.name)}
                                     </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium leading-none truncate">{student.name}</p>
+                                    </div>
+                                    <span className="text-xs text-muted-foreground whitespace-nowrap">Grade {student.grade}</span>
                                 </div>
                             );
                         })}
 
                         <Link href="/students/new">
-                            <div className="relative p-4 rounded-xl border-2 border-dashed border-muted-foreground/30 cursor-pointer transition-all duration-200 hover:bg-muted/50 hover:border-muted-foreground/50 h-full flex flex-col items-center justify-center gap-2 min-h-[140px]" data-testid="link-add-student">
-                                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                                    <Plus className="h-5 w-5" />
+                            <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors text-primary" data-testid="link-add-student">
+                                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground/50">
+                                    <Plus className="h-4 w-4" />
                                 </div>
-                                <span className="font-medium text-sm text-muted-foreground">Add Student</span>
+                                <span className="text-sm font-medium">Add Student</span>
                             </div>
                         </Link>
                     </div>
@@ -227,7 +249,7 @@ export default function ClassSession() {
                         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Class Summary</h2>
                         <Textarea
                             placeholder="What did you cover today? (Sent to parents)"
-                            className="min-h-[120px] bg-muted/30 border-none resize-none text-base"
+                            className="min-h-[120px] bg-muted/30 border-none resize-none text-base p-4 rounded-xl focus-visible:ring-1"
                             value={summary}
                             onChange={(e) => setSummary(e.target.value)}
                             data-testid="input-summary"
@@ -244,9 +266,9 @@ export default function ClassSession() {
                 </section>
             </div>
 
-            <div className="p-6 border-t bg-background space-y-3">
+            <div className="p-6 border-t bg-background space-y-3 sticky bottom-0 z-10 pb-10">
                 <Button
-                    className="w-full h-12 text-base font-semibold shadow-lg shadow-primary/20"
+                    className="w-full h-12 text-base font-semibold shadow-lg shadow-primary/20 rounded-xl"
                     onClick={handleLogClass}
                     disabled={createClassMutation.isPending}
                     data-testid="button-log-class"
@@ -260,7 +282,7 @@ export default function ClassSession() {
                 </Button>
                 <Button
                     variant="outline"
-                    className="w-full h-12 text-base font-semibold"
+                    className="w-full h-12 text-base font-semibold rounded-xl"
                     onClick={handleNotifyParents}
                     data-testid="button-notify-parents"
                 >

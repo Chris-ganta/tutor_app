@@ -127,24 +127,26 @@ export default function Dashboard() {
                                 const student = (students || []).find((s: any) => s.id === session.studentIds[0]);
                                 const studentName = student?.name || "Unknown Student";
                                 return (
-                                    <Card key={session.id} className="border-none shadow-sm overflow-hidden" data-testid={`card-class-${session.id}`}>
-                                        <div className="flex">
-                                            <div className="w-1.5 bg-primary"></div>
-                                            <CardContent className="p-4 flex-1 flex items-center gap-4">
-                                                <div className={`h-10 w-10 rounded-full flex-shrink-0 flex items-center justify-center text-white font-semibold text-sm ${getAvatarColor(studentName)}`}>
-                                                    {getInitials(studentName)}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <h4 className="font-semibold text-sm truncate" data-testid={`text-class-student-${session.id}`}>{studentName}</h4>
-                                                    <p className="text-xs text-muted-foreground truncate">{session.summary}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-xs font-medium">{format(new Date(session.date), "MMM d")}</p>
-                                                    <p className="text-xs text-muted-foreground">{session.durationMinutes} min</p>
-                                                </div>
-                                            </CardContent>
-                                        </div>
-                                    </Card>
+                                    <Link key={session.id} href={`/class/${session.id}`}>
+                                        <Card className="border-none shadow-sm overflow-hidden hover:opacity-90 transition-opacity cursor-pointer" data-testid={`card-class-${session.id}`}>
+                                            <div className="flex">
+                                                <div className="w-1.5 bg-primary"></div>
+                                                <CardContent className="p-4 flex-1 flex items-center gap-4">
+                                                    <div className={`h-10 w-10 rounded-full flex-shrink-0 flex items-center justify-center text-white font-semibold text-sm ${getAvatarColor(studentName)}`}>
+                                                        {getInitials(studentName)}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="font-semibold text-sm truncate" data-testid={`text-class-student-${session.id}`}>{studentName}</h4>
+                                                        <p className="text-xs text-muted-foreground truncate">{session.summary}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-xs font-medium">{format(new Date(session.date), "MMM d")}</p>
+                                                        <p className="text-xs text-muted-foreground">{session.durationMinutes} min</p>
+                                                    </div>
+                                                </CardContent>
+                                            </div>
+                                        </Card>
+                                    </Link>
                                 );
                             })}
                         </div>

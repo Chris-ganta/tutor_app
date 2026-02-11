@@ -12,6 +12,7 @@ import NewStudent from "@/pages/NewStudent";
 import StudentDetails from "@/pages/StudentDetails";
 import EditStudent from "@/pages/EditStudent";
 import ClassSession from "@/pages/ClassSession";
+import ClassDetails from "@/pages/ClassDetails";
 import EditClassSession from "@/pages/EditClassSession";
 import History from "@/pages/History";
 import Earnings from "@/pages/Earnings";
@@ -49,6 +50,7 @@ function Router() {
                 <Route path="/students/:id" component={StudentDetails} />
                 <Route path="/students/:id/edit" component={EditStudent} />
                 <Route path="/class/new" component={ClassSession} />
+                <Route path="/class/:id" component={ClassDetails} />
                 <Route path="/classes/:id/edit" component={EditClassSession} />
                 <Route path="/history" component={History} />
                 <Route path="/earnings" component={Earnings} />
