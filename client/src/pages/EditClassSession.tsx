@@ -105,14 +105,17 @@ export default function EditClassSession() {
     };
 
     // Build enriched student list for StudentList component
+    // Only show students who are already in the session
     const enrichedStudents = useMemo(() =>
-        students.map((s: any) => ({
-            id: s.id,
-            name: s.name,
-            grade: s.grade,
-            selected: selectedStudents.includes(s.id),
-        })),
-        [students, selectedStudents]
+        students
+            .filter((s: any) => classSession?.studentIds?.includes(s.id))
+            .map((s: any) => ({
+                id: s.id,
+                name: s.name,
+                grade: s.grade,
+                selected: selectedStudents.includes(s.id),
+            })),
+        [students, selectedStudents, classSession?.studentIds]
     );
 
     if (sessionLoading || studentsLoading) {
@@ -181,7 +184,12 @@ export default function EditClassSession() {
                     </div>
 
                     {/* Students */}
-                    <StudentList students={enrichedStudents} onToggle={handleToggleStudent} />
+                    <StudentList
+                        students={enrichedStudents}
+                        onToggle={handleToggleStudent}
+                        hideAdd={true}
+                        hideSearch={true}
+                    />
 
                     {/* Duration */}
                     <DurationPicker value={duration} onChange={setDuration} />

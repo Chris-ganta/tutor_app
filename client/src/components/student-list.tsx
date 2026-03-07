@@ -16,6 +16,8 @@ interface Student {
 interface StudentListProps {
     students: Student[]
     onToggle: (id: string) => void
+    hideAdd?: boolean
+    hideSearch?: boolean
 }
 
 const AVATAR_COLORS = [
@@ -33,7 +35,7 @@ function getInitials(name: string) {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
 }
 
-export function StudentList({ students, onToggle }: StudentListProps) {
+export function StudentList({ students, onToggle, hideAdd = false, hideSearch = false }: StudentListProps) {
     const [search, setSearch] = useState("")
 
     const filtered = useMemo(() => {
@@ -58,8 +60,8 @@ export function StudentList({ students, onToggle }: StudentListProps) {
             </div>
 
             <div className="rounded-xl bg-card overflow-hidden border border-border/50">
-                {/* Search bar - appears when list has more than 3 students */}
-                {students.length > 3 && (
+                {/* Search bar - appears when list has more than 3 students and not hidden */}
+                {!hideSearch && students.length > 3 && (
                     <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2">
                         <Search className="size-3.5 text-muted-foreground shrink-0" />
                         <input
@@ -121,18 +123,20 @@ export function StudentList({ students, onToggle }: StudentListProps) {
                     ))}
                 </div>
 
-                {/* Add student action */}
-                <div className="border-t border-border/50">
-                    <Link href="/students/new">
-                        <div
-                            className="flex w-full items-center gap-3 px-4 py-2.5 text-primary hover:bg-secondary/50 transition-colors cursor-pointer"
-                            data-testid="link-add-student"
-                        >
-                            <Plus className="size-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">Add Student</span>
-                        </div>
-                    </Link>
-                </div>
+                {/* Add student action - hidden if hideAdd is true */}
+                {!hideAdd && (
+                    <div className="border-t border-border/50">
+                        <Link href="/students/new">
+                            <div
+                                className="flex w-full items-center gap-3 px-4 py-2.5 text-primary hover:bg-secondary/50 transition-colors cursor-pointer"
+                                data-testid="link-add-student"
+                            >
+                                <Plus className="size-4 text-muted-foreground" />
+                                <span className="text-sm font-medium">Add Student</span>
+                            </div>
+                        </Link>
+                    </div>
+                )}
             </div>
         </div>
     )
