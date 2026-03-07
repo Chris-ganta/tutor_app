@@ -81,6 +81,24 @@ export default function Login() {
                                     Continue with Google
                                 </Button>
 
+                                <Button
+                                    className="w-full h-12 text-base font-medium bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-sm transition-all"
+                                    size="lg"
+                                    variant="outline"
+                                    onClick={async () => {
+                                        try {
+                                            const res = await fetch("/api/auth/dev-login", { method: "POST" });
+                                            if (res.ok) {
+                                                window.location.href = "/";
+                                            }
+                                        } catch (err) {
+                                            console.error(err);
+                                        }
+                                    }}
+                                >
+                                    Login as Test User (Dev)
+                                </Button>
+
                                 <div className="relative">
                                     <div className="absolute inset-0 flex items-center">
                                         <div className="w-full border-t border-slate-200"></div>

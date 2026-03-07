@@ -1,4 +1,4 @@
-
+import "dotenv/config";
 import { getPool } from "../api/storage";
 import { students, classSessions, users } from "../api/schema";
 import { drizzle } from "drizzle-orm/node-postgres";

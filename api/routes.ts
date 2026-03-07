@@ -14,6 +14,27 @@ export async function registerRoutes(
 
     setupAuth(app);
 
+    // Dev login for testing
+    app.post("/api/auth/dev-login", async (req, res) => {
+        // Allow in dev mode or if explicitly allowed
+        if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEV_LOGIN !== "true") {
+            return res.status(403).json({ message: "Dev login disabled" });
+        }
+
+        const devUser = {
+            id: 1,
+            googleId: "116116829850356188276",
+            email: "chris.ganta@gmail.com",
+            name: "Chris Ganta",
+            picture: "https://lh3.googleusercontent.com/a/ACg8ocJaQBGFVyDv2kOtrm3tQLGD4yf42Z5xdcmSfqjwZgZsFKkcv7WV=s96-c",
+        };
+
+        req.login(devUser, (err) => {
+            if (err) return res.status(500).json({ message: "Login failed" });
+            res.json(devUser);
+        });
+    });
+
     app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
     app.get(

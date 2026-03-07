@@ -105,7 +105,14 @@ export default function ClassDetails() {
                     <Button variant="ghost" size="icon" onClick={() => setLocation("/history")}>
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
-                    <h1 className="text-lg font-bold font-display">Class Details</h1>
+                    <div className="flex-1">
+                        <h1 className="text-lg font-bold font-display">Class Details</h1>
+                    </div>
+                    <Link href={`/classes/${id}/edit`}>
+                        <Button variant="outline" size="sm" className="gap-2">
+                            Edit
+                        </Button>
+                    </Link>
                 </div>
             </div>
 
@@ -160,8 +167,8 @@ export default function ClassDetails() {
                 {/* Payment Status */}
                 <div
                     className={`w-full p-4 rounded-xl border-2 flex items-center justify-between transition-all cursor-pointer ${session.isPaid
-                            ? "bg-green-50 border-green-200 hover:bg-green-100"
-                            : "bg-amber-50 border-amber-200 hover:bg-amber-100"
+                        ? "bg-green-50 border-green-200 hover:bg-green-100"
+                        : "bg-amber-50 border-amber-200 hover:bg-amber-100"
                         }`}
                     onClick={() => togglePaymentMutation.mutate({ id: session.id, isPaid: !session.isPaid })}
                 >
